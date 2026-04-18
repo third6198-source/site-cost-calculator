@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Site Cost Calculator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f0f;
+      --surface: #181818;
+      --surface2: #222222;
+      --border: #2e2e2e;
+      --accent: #d4ff4e;
+      --accent2: #4edfff;
+      --text: #f0f0f0;
+      --muted: #777;
+      --danger: #ff5f5f;
+      --radius: 14px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2.5rem 1rem 4rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    header h1 {
+      font-size: clamp(1.8rem, 5vw, 2.8rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+
+    header h1 span {
+      color: var(--accent);
+    }
+
+    header p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      width: 100%;
+      max-width: 780px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.75rem;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .card:hover { border-color: #444; }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+
+    .card.labour::before { background: var(--accent); }
+    .card.material::before { background: var(--accent2); }
+
+    .card-tag {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    .card.labour .card-tag { color: var(--accent); }
+    .card.material .card-tag { color: var(--accent2); }
+
+    .card h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+    }
+
+    .field { margin-bottom: 0.85rem; }
+
+    .field label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      margin-bottom: 0.35rem;
+      letter-spacing: 0.05em;
+    }
+
+    .field input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 1rem;
+      padding: 0.65rem 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .field input:focus { border-color: #555; }
+    .field input::placeholder { color: #444; }
+    .field input::-webkit-inner-spin-button { display: none; }
+
+    .error {
+      font-size: 0.75rem;
+      color: var(--danger);
+      font-family: 'DM Mono', monospace;
+      min-height: 1rem;
+      margin: 0.3rem 0 0.5rem;
+    }
+
+    button {
+      width: 100%;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: opacity 0.15s, transform 0.1s;
+      margin-top: 0.25rem;
+    }
+
+    button:active { transform: scale(0.98); }
+
+    .card.labour button {
+      background: var(--accent);
+      color: #0f0f0f;
+    }
+
+    .card.material button {
+      background: var(--accent2);
+      color: #0f0f0f;
+    }
+
+    .results {
+      margin-top: 1.25rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
+    }
+
+    .result-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 0.9rem;
+    }
+
+    .result-label {
+      font-size: 0.68rem;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.2rem;
+    }
+
+    .result-value {
+      font-family: 'DM Mono', monospace;
+      font-size: 1.05rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: color 0.3s;
+    }
+
+    .result-value.updated {
+      color: var(--accent);
+    }
+
+    .card.material .result-value.updated {
+      color: var(--accent2);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Site <span>Cost</span> Calculator</h1>
+    <p>labour · material · projections</p>
+  </header>
+
+  <div class="grid">
+
+    <!-- LABOUR CARD -->
+    <div class="card labour">
+      <div class="card-tag">Section 01</div>
+      <h2>Labour Calculation</h2>
+      <div class="field">
+        <label for="dailyWage">Daily Wage per Worker (₹)</label>
+        <input type="number" id="dailyWage" placeholder="e.g. 500" min="0" />
+      </div>
+      <div class="field">
+        <label for="numLabours">Number of Workers</label>
+        <input type="number" id="numLabours" placeholder="e.g. 10" min="0" />
+      </div>
+      <div class="error" id="labourError"></div>
+      <button id="labourBtn">Calculate Labour</button>
+      <div class="results">
+        <div class="result-item">
+          <div class="result-label">Daily</div>
+          <div class="result-value" id="labourDaily">₹ —</div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Weekly</div>
+          <div class="result-value" id="labourWeekly">₹ —</div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Monthly</div>
+          <div class="result-value" id="labourMonthly">₹ —</div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Yearly</div>
+          <div class="result-value" id="labourYearly">₹ —</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MATERIAL CARD -->
+    <div class="card material">
+      <div class="card-tag">Section 02</div>
+      <h2>Material Tracker</h2>
+      <div class="field">
+        <label for="totalMaterial">Total Bags</label>
+        <input type="number" id="totalMaterial" placeholder="e.g. 1000" min="0" />
+      </div>
+      <div class="field">
+        <label for="usedToday">Used Today</label>
+        <input type="number" id="usedToday" placeholder="e.g. 30" min="0" />
+      </div>
+      <div class="error" id="materialError"></div>
+      <button id="materialBtn">Calculate Material</button>
+      <div class="results">
+        <div class="result-item">
+          <div class="result-label">Remaining</div>
+          <div class="result-value" id="remainingMaterial">—</div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Monthly Use</div>
+          <div class="result-value" id="cementMonthly">—</div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">2 Months</div>
+          <div class="result-value" id="cement2Month">—</div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Yearly Use</div>
+          <div class="result-value" id="cementYearly">—</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function flashUpdate(ids) {
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        el.classList.remove('updated');
+        void el.offsetWidth;
+        el.classList.add('updated');
+        setTimeout(() => el.classList.remove('updated'), 1200);
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+
+      document.getElementById("labourBtn").addEventListener("click", function () {
+        const wage = Number(document.getElementById("dailyWage").value);
+        const workers = Number(document.getElementById("numLabours").value);
+        const err = document.getElementById("labourError");
+        if (!wage || !workers || wage <= 0 || workers <= 0) {
+          err.textContent = "Enter valid wage and worker values greater than 0.";
+          return;
+        }
+        err.textContent = "";
+        const daily = wage * workers;
+        const fmt = n => "₹ " + n.toLocaleString('en-IN');
+        document.getElementById("labourDaily").textContent = fmt(daily);
+        document.getElementById("labourWeekly").textContent = fmt(daily * 7);
+        document.getElementById("labourMonthly").textContent = fmt(daily * 30);
+        document.getElementById("labourYearly").textContent = fmt(daily * 365);
+        flashUpdate(["labourDaily","labourWeekly","labourMonthly","labourYearly"]);
+      });
+
+      document.getElementById("materialBtn").addEventListener("click", function () {
+        const total = Number(document.getElementById("totalMaterial").value);
+        const used = Number(document.getElementById("usedToday").value);
+        const err = document.getElementById("materialError");
+        if (!total || total <= 0) {
+          err.textContent = "Enter a valid total bag count greater than 0.";
+          return;
+        }
+        if (used < 0) {
+          err.textContent = "Used today cannot be negative.";
+          return;
+        }
+        if (used > total) {
+          err.textContent = "Used today cannot exceed total bags.";
+          return;
+        }
+        err.textContent = "";
+        const fmt = n => n.toLocaleString('en-IN');
+        document.getElementById("remainingMaterial").textContent = fmt(total - used);
+        document.getElementById("cementMonthly").textContent = fmt(used * 30);
+        document.getElementById("cement2Month").textContent = fmt(used * 60);
+        document.getElementById("cementYearly").textContent = fmt(used * 365);
+        flashUpdate(["remainingMaterial","cementMonthly","cement2Month","cementYearly"]);
+      });
+
+    });
+  </script>
+</body>
+</html>
